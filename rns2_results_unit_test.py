@@ -19,9 +19,9 @@ class RNSResult:
 class RNS2_UnitTest(unittest.TestCase):
 
     def setUp(self):
-        self.path_to_results = 'G:\\OLGR-TECHSERV-TSS-FILES\\Keno\\Tabcorp\\KNG_new\\Results\\2017'
+        self.path_to_results = 'G:\\OLGR-TECHSERV-TSS-FILES\\Keno\\Tabcorp\\KNG_new\\Results\\2018'
         self.result_files = [x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')]
-        
+
     def test_sequential_date(self):
         file_date_list = list()
         
@@ -30,14 +30,23 @@ class RNS2_UnitTest(unittest.TestCase):
             timestamp = datetime.strptime(f.time_stamp, '%Y-%m-%dT%M.%H.%S')
             file_date_list.append(timestamp)
 
-            # print(str(timestamp.strftime("%Y-%m-%d")))
+        file_date_list_sorted = sorted(file_date_list) 
 
-        date_set = set(file_date_list[0] + timedelta(x) for x in range((file_date_list[-1] - file_date_list[0]).days))
-        missing = sorted(date_set - set(file_date_list))
+        #date_set = set(file_date_list[0] + timedelta(x) for x in range((file_date_list[-1] - file_date_list[0]).days))
+        # print(file_date_list_sorted[-1].strftime("%Y-%m-%d"), file_date_list_sorted[0].strftime("%Y-%m-%d"))
+        
+        generated_date_list = list()
+        for x in range((file_date_list_sorted[-1] - file_date_list_sorted[0]).days): 
+            generated_date_list.append(file_date_list_sorted[0] + timedelta(x))
 
+        for date in sorted(generated_date_list):
+            print("Generated Date List: " + date.strftime("%Y-%m-%d"))
+        
+        missing = set(sorted(generated_date_list)) - set(sorted(file_date_list_sorted))
+    
         print("\n\nMissing Keno Results: ")
         for date in missing:
-            print(date.strftime("%Y-%m-%d"))
+           print(date)
 
         self.assertTrue(len(missing) == 0)
         
