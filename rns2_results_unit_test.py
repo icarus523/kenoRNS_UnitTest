@@ -39,8 +39,8 @@ class RNS2_UnitTest(unittest.TestCase):
         for x in range((file_date_list_sorted[-1] - file_date_list_sorted[0]).days): 
             generated_date_list.append(file_date_list_sorted[0] + timedelta(x))
 
-        for date in sorted(generated_date_list):
-            print("Generated Date List: " + date.strftime("%Y-%m-%d"))
+        #for date in sorted(generated_date_list):
+        #   print("Generated Date List: " + date.strftime("%Y-%m-%d"))
         
         missing = set(sorted(generated_date_list)) - set(sorted(file_date_list_sorted))
     
