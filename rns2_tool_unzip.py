@@ -1,8 +1,8 @@
 import os
 import zipfile
 
-RNS2_LOGS_PATH = "C:\\Users\\aceretjr\\Documents\\dev\\RNS2MissingResults\\rns2\\"
-RNS2_LOGS_PATH_OUTPUT = "C:\\Users\\aceretjr\\Documents\\dev\\RNS2MissingResults\\rns2\\output"
+RNS2_LOGS_PATH = "/home/azureadmin/rns2_downloaded_results/"
+RNS2_LOGS_PATH_OUTPUT = "/home/azureadmin/rns2_results_unzipped"
 
 ### IMPORTANT
 ### Make sure you are not using the RNS2 result files from G:\OLGR-TECHSERV-TSS-FILES\Keno\Tabcorp\KNG_new\Results
@@ -45,3 +45,4 @@ def main():
     app = RNS2_Unzip(RNS2_LOGS_PATH)
 
 if __name__ == "__main__": main()
+
