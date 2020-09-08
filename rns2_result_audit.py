@@ -11,8 +11,8 @@ from xml.etree.ElementTree import ElementTree
 from datetime import datetime, date, timedelta
 
 # path to zipped rns2files
-RNS2_LOGS_PATH = "rns2results"
-RNS2_LOGS_PATH_OUTPUT = "rns2_results_unzipped"
+RNS2_LOGS_PATH = "rns2_results_unzipped"
+RNS2_LOGS_PATH_OUTPUT = "rns2results"
 KEYPATH = "keys"
 
 # file names
@@ -20,14 +20,15 @@ FILE_FAIL_OR_NONE='fail_or_none_outpout.txt'
 FILE_LOG = 'signparalog.out'
 FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 
-class RNS2_Unzip(): 
+class RNS2_Unzip: 
     # class to unzip RNS zipped log files 
     
     def __init__(self, path_to_result):
         self.path_to_results = path_to_result
         
         self.result_files = [x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')]
-
+        assert(len(self.result_files) > 0)
+        
         self.process_files()
 
     def process_files(self):
@@ -175,6 +176,8 @@ class RNS2_UnitTest(unittest.TestCase):
             file_date_list.append(timestamp)
 
         file_date_list_sorted = sorted(file_date_list) 
+
+        self.assertTrue(len(file_date_list_sorted) > 0)
         
         generated_date_list = list()
         for x in range((file_date_list_sorted[-1] - file_date_list_sorted[0]).days): 
