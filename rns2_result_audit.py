@@ -20,6 +20,22 @@ FILE_FAIL_OR_NONE='fail_or_none_outpout.txt'
 FILE_LOG = 'signparalog.out'
 FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 
+class RNS2ResultEmail: 
+
+    def __init__(self, start_date, end_date, result_d): 
+        self.start_date = start_date
+        self.end_date = end_date
+        self.result_d = result_d
+
+        self.draft_email()
+
+    def draft_email(self):
+        header = "An audit of the Keno QLDRNS results log file for the following period have been completed:\n\n"
+        result = "Results:\n\nAll Keno QLD RNS results files passed signature and integrity checks. See below for details.\n"
+        path_to_result = result_d['path_to_result']
+
+        pass
+
 class RNS2_Unzip: 
     # class to unzip RNS zipped log files 
     
@@ -89,9 +105,10 @@ class RNS2_UnitTest(unittest.TestCase):
         with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'w') as outfile:
             for fname in filenames:
                 outfile.write("Check signature for file : " + fname + "\n")
-                with open(fname) as infile:
-                    for line in infile:
-                        outfile.write(line)
+                with open(fname) as file:
+                    for line in file:
+                        if not line.isspace():
+                            outfile.write(line)
                 os.remove(fname)
 
     def build_missing_filename(self, date):
@@ -177,7 +194,7 @@ class RNS2_UnitTest(unittest.TestCase):
 
         file_date_list_sorted = sorted(file_date_list) 
 
-        self.assertTrue(len(file_date_list_sorted) > 0)
+        self.assertTrue(len(file_date_list_sorted) > 0, len(file_date_list_sorted))
         
         generated_date_list = list()
         for x in range((file_date_list_sorted[-1] - file_date_list_sorted[0]).days): 
@@ -192,17 +209,19 @@ class RNS2_UnitTest(unittest.TestCase):
             for date in missing:
                 print("Date: " + date.strftime("%Y-%m-%d") + "; Filename: " + self.build_missing_filename(date))
                 
-        self.assertTrue(len(missing) == 0)
+        self.assertTrue(len(missing) == 0, len(missing))
 
     # Test case to verify the file size of each zip file. 
     def test_file_size(self):
+        local expected_fsize = 100000
         for filename in self.result_files:
             size_in_bytes = os.stat(os.path.join(self.path_to_results,filename))
 
-            if size_in_bytes.st_size < 100000:
+            if size_in_bytes.st_size < expected_fsize:
                 print("WARNING!: " + filename + ": is less than 100KB. Size is: " + str(size_in_bytes.st_size) + " bytes")
             
-            self.assertTrue(size_in_bytes.st_size > 100000)
+            err_msg = filename + " file size is less than expected size: " + str(size_in_bytes.st_size)
+            self.assertTrue(size_in_bytes.st_size > expected_fsize, err_msg)
 
     # Test case to verify the parameters for each Keno game result
     def test_parameter_check_keno(self): 
@@ -223,7 +242,8 @@ class RNS2_UnitTest(unittest.TestCase):
         signkey_list = [KEYPATH + "/" + s for s in signkey_list]
             
         for file in json_file_l:
-            subprocess.call('java -jar bin/KenoSignAudit.jar ' + os.path.join(RNS2_LOGS_PATH_OUTPUT, file) +  ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
+            subprocess.call('java -jar bin/KenoSignAudit.jar ' + os.path.join(RNS2_LOGS_PATH_OUTPUT, file) +  
+                ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
 
         # cat all .out file in logevent file
         fileout_lists = [x for x in os.listdir('.') if x.endswith('.out')] # list_files(RNS2_RESULTS_PATH, ".out")
