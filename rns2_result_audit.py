@@ -4,6 +4,7 @@ import json
 import subprocess
 import zipfile
 import logging
+import dateutil.parser
 
 import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
@@ -16,7 +17,7 @@ RNS2_LOGS_PATH_OUTPUT = "rns2results"
 KEYPATH = "keys"
 
 # file names
-FILE_FAIL_OR_NONE='fail_or_none_outpout.txt'
+FILE_FAIL_OR_NONE='fail_or_none_output.txt'
 FILE_LOG = 'signparalog.out'
 FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 
@@ -175,6 +176,14 @@ class RNS2_UnitTest(unittest.TestCase):
                         self.logstringtofile("Keno ID : " + KenoID + " Result check weighting: FAIL ")
                         return False
                     jsver = child.find('{urn:envelope}verificationContext')
+                    jtimestamp = child.findtext('{urn:envelope}timestamp')
+                    jsignerTimestamp = child.findtext('{urn:envelope}signerTimestamp')
+                    timestamp = dateutil.parser.isoparse(jtimestamp) # RFC 3339 format
+                    signerTimestamp = dateutil.parser.isoparse(jsignerTimestamp)
+                    difference =  signerTimestamp - timestamp
+                    if abs(difference.seconds) > MAXIMUM_TIMESTAMP_DIFFERENCE:
+                        self.logstringtofile("resultId: " + KenoID + " signerTimestamp: " + str(signerTimestamp) 
+                            + " timestamp: " + str(timestamp) + " Difference: " + str(difference))
                     jsgnum = jsver.findtext('{urn:envelope}gameNumber')
                     jsgnrel = str(int(jsgnum)) + "," + jsrel
                     if(jsrel !=0):
@@ -213,7 +222,7 @@ class RNS2_UnitTest(unittest.TestCase):
 
     # Test case to verify the file size of each zip file. 
     def test_file_size(self):
-        local expected_fsize = 100000
+        expected_fsize = 100000
         for filename in self.result_files:
             size_in_bytes = os.stat(os.path.join(self.path_to_results,filename))
 
