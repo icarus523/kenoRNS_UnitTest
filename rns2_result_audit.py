@@ -124,16 +124,25 @@ class RNS2_UnitTest(unittest.TestCase):
         with open(FILE_FAIL_OR_NONE,'a+') as f: 
             f.writelines(line)
 
+    # Python Program to Convert seconds
+    # into hours, minutes and seconds
+      
+    def convert(self, seconds):
+        min, sec = divmod(seconds, 60)
+        hour, min = divmod(min, 60)
+        return "%d:%02d:%02d" % (hour, min, sec)
     # verifies parameters in the JSON result file for Keno games
     # input: json result file path
     # output: boolean: True | False
     #   will write to log file should tests fail
     def parametercheck_keno(self, resultsJsonFile):
+        MAXIMUM_TIMESTAMP_DIFFERENCE = 300
         with open(os.path.join(RNS2_LOGS_PATH_OUTPUT, resultsJsonFile), 'r') as f:
             json_data = json.load(f)
 
             for result in json_data['results']:
                 KenoID = result['result']['resultId']
+                DeviceID = result['result']['deviceId']
                 resultXml = etree.fromstring(result['result']['result'].encode('utf-8'))
                 for child in resultXml:
                     # print(child.tag, child.attrib)
@@ -181,8 +190,11 @@ class RNS2_UnitTest(unittest.TestCase):
                     timestamp = dateutil.parser.isoparse(jtimestamp) # RFC 3339 format
                     signerTimestamp = dateutil.parser.isoparse(jsignerTimestamp)
                     difference =  signerTimestamp - timestamp
+                    self.time_stamp_difference.append(difference)
+                    print("resultId: " + KenoID + " DeviceID: " + DeviceID + " signerTimestamp: " + str(signerTimestamp) 
+                            + " timestamp: " + str(timestamp) + " Difference: " + str(difference))
                     if abs(difference.seconds) > MAXIMUM_TIMESTAMP_DIFFERENCE:
-                        self.logstringtofile("resultId: " + KenoID + " signerTimestamp: " + str(signerTimestamp) 
+                        self.logstringtofile("resultId: " + KenoID + " DeviceID: " + DeviceID + " signerTimestamp: " + str(signerTimestamp) 
                             + " timestamp: " + str(timestamp) + " Difference: " + str(difference))
                     jsgnum = jsver.findtext('{urn:envelope}gameNumber')
                     jsgnrel = str(int(jsgnum)) + "," + jsrel
@@ -236,10 +248,16 @@ class RNS2_UnitTest(unittest.TestCase):
     def test_parameter_check_keno(self): 
         self.unzipped_files = RNS2_Unzip(RNS2_LOGS_PATH)
         self.json_file_l = [x for x in os.listdir(self.json_results) if x.endswith('.json')]
+        self.time_stamp_difference = list() 
         
         # Parameter check for each file
         for f in self.json_file_l:
             self.assertTrue(self.parametercheck_keno(f))
+        sum_num = 0
+        for item in self.time_stamp_difference: 
+            sum_num = sum_num + item.seconds
+        avg = sum_num / len(self.time_stamp_difference)
+        print("The average time stamp difference (signingTimeStamp - timeStamp) is: ", self.convert(avg))
 
     # Test case tp verify result file has been signed by an expected signing key
     def test_resultfile_with_signingkeys(self): 
