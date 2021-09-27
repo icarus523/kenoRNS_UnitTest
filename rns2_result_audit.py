@@ -5,6 +5,7 @@ import subprocess
 import zipfile
 import logging
 import dateutil.parser
+import time
 
 import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
@@ -124,13 +125,6 @@ class RNS2_UnitTest(unittest.TestCase):
         with open(FILE_FAIL_OR_NONE,'a+') as f: 
             f.writelines(line)
 
-    # Python Program to Convert seconds
-    # into hours, minutes and seconds
-      
-    def convert(self, seconds):
-        min, sec = divmod(seconds, 60)
-        hour, min = divmod(min, 60)
-        return "%d:%02d:%02d" % (hour, min, sec)
     # verifies parameters in the JSON result file for Keno games
     # input: json result file path
     # output: boolean: True | False
@@ -257,7 +251,8 @@ class RNS2_UnitTest(unittest.TestCase):
         for item in self.time_stamp_difference: 
             sum_num = sum_num + item.seconds
         avg = sum_num / len(self.time_stamp_difference)
-        print("The average time stamp difference (signingTimeStamp - timeStamp) is: ", self.convert(avg))
+        avg_HMS_str = time.strftime("%H:%M:%S", time.gmtime(avg))
+        print("\n\nThe average time stamp difference (signingTimeStamp - timeStamp) is: ", avg_HMS_str)
 
     # Test case tp verify result file has been signed by an expected signing key
     def test_resultfile_with_signingkeys(self): 
