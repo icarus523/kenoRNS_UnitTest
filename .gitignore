@@ -5,3 +5,5 @@ fail_or_none_outpout.txt
 *.json
 *.pyc
 signlog.txt
+fail_or_none_output.txt
+KenoRNSResultAudit.sublime-workspace

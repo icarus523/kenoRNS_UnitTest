@@ -4,8 +4,9 @@ import json
 import subprocess
 import zipfile
 import logging
-import dateutil.parser
+# import dateutil.parser
 import time
+from rfc3339 import parse_datetime
 
 import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
@@ -181,8 +182,13 @@ class RNS2_UnitTest(unittest.TestCase):
                     jsver = child.find('{urn:envelope}verificationContext')
                     jtimestamp = child.findtext('{urn:envelope}timestamp')
                     jsignerTimestamp = child.findtext('{urn:envelope}signerTimestamp')
-                    timestamp = dateutil.parser.isoparse(jtimestamp) # RFC 3339 format
-                    signerTimestamp = dateutil.parser.isoparse(jsignerTimestamp)
+                    
+                    # timestamp = dateutil.parser.isoparse(jtimestamp) # RFC 3339 format
+                    # signerTimestamp = dateutil.parser.isoparse(jsignerTimestamp)
+                   
+                    timestamp = parse_datetime(jtimestamp)
+                    signerTimestamp = parse_datetime(jsignerTimestamp)
+
                     difference =  signerTimestamp - timestamp
                     self.time_stamp_difference.append(difference)
                     print("resultId: " + KenoID + " DeviceID: " + DeviceID + " signerTimestamp: " + str(signerTimestamp) 
