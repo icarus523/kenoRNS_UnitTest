@@ -164,7 +164,10 @@ class RNS2_UnitTest(unittest.TestCase):
         fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - unittest_results.txt"
         with open(fname, 'a+') as f:
             f.write("\nMaximum acceptable diff (5% of average): " + str(round(max_acceptable_diff, 2)) + " (secs)")
-            f.write("\nAverage is: " + str(round(average,2)) + " (secs)\n")
+            # f.write("\nAverage is: " + str(round(average,2)) + " (secs)\n")
+
+        exceeded_max_diff = list()
+        exceeded_avg = list() 
 
         for item in itemlist: 
             # RFC 3339 format
@@ -176,22 +179,30 @@ class RNS2_UnitTest(unittest.TestCase):
                 diff_between_ts_diff = abs(prev_diff - difference)
 
                 with open(fname, 'a+') as f:
-
                     if diff_between_ts_diff.total_seconds() > max_acceptable_diff:                     
-                        f.write("\n" + str(deviceID) + " WARNING!! ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(max_acceptable_diff,2)) + " (max_acceptable_diff)")
-    
+                        s = "\n" + str(deviceID) + " WARNING!! ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(max_acceptable_diff,2)) + " (max_acceptable_diff)"
+                        exceeded_max_diff.append(s)
+                        f.write(s)
+
                     if diff_between_ts_diff.total_seconds() > average: 
-                        f.write("\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(average,2)) + " (average)")
+                        s = "\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(average,2)) + " (average)"
+                        exceeded_avg.append(s)
+                        f.write(s)
 
                     # if diff_between_ts_diff.total_seconds() > prev_diff.total_seconds(): 
                     #     f.write("\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(prev_diff.total_seconds(),2)) + " (previous diff)")
-
 
                 prev_diff = diff_between_ts_diff
                 prev_resultId = item['KenoID']
             else: 
                 prev_diff = difference
                 prev_resultId = item['KenoID']
+
+        with open(fname, 'a+') as f: 
+            s1 = "\n\nThere were " + str(len(exceeded_max_diff)) + " timestamp differences that exceeded the maximum acceptable diff of " + str(round(max_acceptable_diff, 2)) + " (secs)\n"
+            f.write(s1)
+            s2 = "\nThere were " + str(len(exceeded_avg)) + " timestamp differences that exceeded the average diff of " + str(round(average,2)) + " (secs)"
+            f.write(s2)
 
     def getDevice(self, itemlist): 
         if len(itemlist) == 0:
