@@ -129,6 +129,7 @@ class RNS2_UnitTest(unittest.TestCase):
         with open(FILE_FAIL_OR_NONE,'a+') as f: 
             f.writelines(line)
 
+
     def getAverage(self, itemlist):
         if len(itemlist) == 0:
             return 0
@@ -146,6 +147,52 @@ class RNS2_UnitTest(unittest.TestCase):
         
         return avg
     
+    def getTimeDifference(self, itemlist): 
+        deviceID = itemlist[0]['DeviceID']
+
+        if len(itemlist) == 0:
+            return 0
+
+        difference_l = list() 
+        prev_diff = 0
+        prev_resultId = None
+        average = self.getAverage(itemlist) 
+        percentage_diff = 0.05
+        max_acceptable_diff = average + average*percentage_diff
+        # max_acceptable_diff = average*percentage_diff
+
+        fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - unittest_results.txt"
+        with open(fname, 'a+') as f:
+            f.write("\nMaximum acceptable diff (5% of average): " + str(round(max_acceptable_diff, 2)) + " (secs)")
+            f.write("\nAverage is: " + str(round(average,2)) + " (secs)\n")
+
+        for item in itemlist: 
+            # RFC 3339 format
+            timestamp = dateutil.parser.isoparse(item['timestamp']) 
+            signerTimestamp = dateutil.parser.isoparse(item['signerTimestamp'])
+            difference =  signerTimestamp - timestamp            
+
+            if prev_diff != 0: 
+                diff_between_ts_diff = abs(prev_diff - difference)
+
+                with open(fname, 'a+') as f:
+
+                    if diff_between_ts_diff.total_seconds() > max_acceptable_diff:                     
+                        f.write("\n" + str(deviceID) + " WARNING!! ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(max_acceptable_diff,2)) + " (max_acceptable_diff)")
+    
+                    if diff_between_ts_diff.total_seconds() > average: 
+                        f.write("\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(average,2)) + " (average)")
+
+                    # if diff_between_ts_diff.total_seconds() > prev_diff.total_seconds(): 
+                    #     f.write("\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(prev_diff.total_seconds(),2)) + " (previous diff)")
+
+
+                prev_diff = diff_between_ts_diff
+                prev_resultId = item['KenoID']
+            else: 
+                prev_diff = difference
+                prev_resultId = item['KenoID']
+
     def getDevice(self, itemlist): 
         if len(itemlist) == 0:
             return "unknown"
@@ -292,6 +339,7 @@ class RNS2_UnitTest(unittest.TestCase):
 
         rnglist = [qldtbknrng01_entries, qldtbknrng02_entries, qldtbknrng03_entries, qldtbknrng04_entries]
 
+        # get average timestamp difference
         for device in rnglist:
             avg = 0
             if len(device) != 0: 
@@ -305,7 +353,12 @@ class RNS2_UnitTest(unittest.TestCase):
                         if deviceID in entry:
                             f.write("\n" + entry) # write output str to file
 
-                    f.write("\n\n" + deviceID + " - The average time stamp difference (signingTimeStamp - timeStamp) is: " + avg_HMS_str + " or " + str(round(avg,2)) + " (secs)")
+                    f.write("\n\n" + deviceID + " - The average time stamp difference (signingTimeStamp - timeStamp) is: " + avg_HMS_str + " or " + str(round(avg,2)) + " (secs)\n")
+
+        # timestamp differences between each result is greater than the average
+        for device in rnglist: 
+            if len(device) != 0: 
+                self.getTimeDifference(device)
 
     # Test case to verify the zip archive file name are sequential based on date 
     # in the filename 
