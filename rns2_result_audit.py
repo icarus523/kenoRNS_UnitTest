@@ -334,6 +334,7 @@ class RNS2_UnitTest(unittest.TestCase):
         qldtbknrng02_entries = list() 
         qldtbknrng03_entries = list()
         qldtbknrng04_entries = list() 
+        otherkrng_entries = list()
         
         # sort
         for entry in self.time_stamp_dict_l:
@@ -347,29 +348,31 @@ class RNS2_UnitTest(unittest.TestCase):
                         qldtbknrng03_entries.append(entry)
                     elif v == 'qldtbknrng04':
                         qldtbknrng04_entries.append(entry)
+                    else: 
+                        otherkrng_entries.append(entry)
 
-        rnglist = [qldtbknrng01_entries, qldtbknrng02_entries, qldtbknrng03_entries, qldtbknrng04_entries]
+        rnglist = [qldtbknrng01_entries, qldtbknrng02_entries, qldtbknrng03_entries, qldtbknrng04_entries, otherkrng_entries]
 
         # get average timestamp difference
         for device in rnglist:
             avg = 0
             if len(device) != 0: 
                 deviceID = device[0]['DeviceID']
-                avg = self.getAverage(device)
+                # avg = self.getAverage(device)
                 
-                avg_HMS_str = time.strftime("%H:%M:%S", time.gmtime(avg))
+                # avg_HMS_str = time.strftime("%H:%M:%S", time.gmtime(avg))
                 fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - unittest_results.txt"
                 with open(fname, 'w+') as f:
                     for entry in self.output_str:
                         if deviceID in entry:
                             f.write("\n" + entry) # write output str to file
 
-                    f.write("\n\n" + deviceID + " - The average time stamp difference (signingTimeStamp - timeStamp) is: " + avg_HMS_str + " or " + str(round(avg,2)) + " (secs)\n")
+                    # f.write("\n\n" + deviceID + " - The average time stamp difference (signingTimeStamp - timeStamp) is: " + avg_HMS_str + " or " + str(round(avg,2)) + " (secs)\n")
 
         # timestamp differences between each result is greater than the average
-        for device in rnglist: 
-            if len(device) != 0: 
-                self.getTimeDifference(device)
+        # for device in rnglist: 
+        #     if len(device) != 0: 
+        #         self.getTimeDifference(device)
 
     # Test case to verify the zip archive file name are sequential based on date 
     # in the filename 
