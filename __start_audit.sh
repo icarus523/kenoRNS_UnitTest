@@ -20,7 +20,7 @@ rm *.out
 rm rns2results/*
 
 # perform unit tests
-python3 -m unittest rns2_result_audit.py -v
+python3 -m unittest discover -s tests -v
 
 # signlog.txt
 # Note: This is the final log of the java application used to test certs/signatures
