@@ -11,7 +11,6 @@ import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
 
 from datetime import datetime, date, timedelta
-from statistics import mean
 
 # path to zipped rns2files
 RNS2_LOGS_PATH = "rns2_results_unzipped"
@@ -24,6 +23,7 @@ FILE_LOG = 'signparalog.out'
 FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 
 # Set to True if you only want to generate results for timestamp drift
+# by default, keep this to false
 TIMESTAMP_DRIFT_ONLY = False
 
 class RNS2ResultEmail: 
@@ -46,7 +46,10 @@ class RNS2_Unzip:
     # class to unzip RNS zipped log files 
     
     def __init__(self, path_to_result):
-        self.path_to_results = path_to_result
+        if not path_to_result: 
+            self.path_to_results = RNS2_LOGS_PATH
+        else:
+            self.path_to_results = path_to_result
         
         self.result_files = [x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')]
         assert(len(self.result_files) > 0)
@@ -95,17 +98,20 @@ class RNSResult:
 class RNS2_UnitTest(unittest.TestCase):
 
     def setUp(self):
-        self.path_to_results = RNS2_LOGS_PATH
-        self.json_results = RNS2_LOGS_PATH_OUTPUT
-        self.result_files = [x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')]
+        self.path_to_results = RNS2_LOGS_PATH # unzipped archives
+        self.result_files = [x for x in os.listdir(RNS2_LOGS_PATH) if x.endswith('.json.zip')]
+        RNS2_Unzip(self.path_to_results)
         
     def tearDown(self):
-        json_file_l = [x for x in os.listdir(self.json_results) if x.endswith('.json')]
+        json_file_l = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
 
-        # delete unzipped files            
+        # delete json files            
         for f in json_file_l:
             if os.path.isfile(f): 
                 os.remove(f)
+
+        # delete zip files
+        # do here
 
     def concatenate_signlogfiles(self, filenames):
         with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'w') as outfile:
@@ -121,101 +127,26 @@ class RNS2_UnitTest(unittest.TestCase):
         ts = date.strftime("%Y-%m-%dT%M.%H.%S")
         return "results_QLDRNS-production_" + ts + ".json.zip"
 
-    def logstringtofile(self, stringnames):
-        with open(FILE_LOG, 'a+') as outfile:
-            outfile.write(stringnames)
+    def logstringtofile(self, line):
+        with open(FILE_LOG, 'a+') as f:
+            f.writelines(line)
 
     def log_fail_or_none(self, line): 
         with open(FILE_FAIL_OR_NONE,'a+') as f: 
             f.writelines(line)
-
-
-    def getAverage(self, itemlist):
-        if len(itemlist) == 0:
-            return 0
-            
-        sum_num = 0
-        for item in itemlist: 
-            # RFC 3339 format
-            timestamp = dateutil.parser.isoparse(item['timestamp']) 
-            signerTimestamp = dateutil.parser.isoparse(item['signerTimestamp'])
-            difference =  signerTimestamp - timestamp
-        
-            sum_num = sum_num + abs(difference.total_seconds())
-
-        avg = sum_num / len(itemlist)
-        
-        return avg
-    
-    def getTimeDifference(self, itemlist): 
-        deviceID = itemlist[0]['DeviceID']
-
-        if len(itemlist) == 0:
-            return 0
-
-        difference_l = list() 
-        prev_diff = 0
-        prev_resultId = None
-        average = self.getAverage(itemlist) 
-        percentage_diff = 0.05
-        max_acceptable_diff = average + average*percentage_diff
-        # max_acceptable_diff = average*percentage_diff
-
-        fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - unittest_results.txt"
-        with open(fname, 'a+') as f:
-            f.write("\nMaximum acceptable diff (5% of average): " + str(round(max_acceptable_diff, 2)) + " (secs)")
-            # f.write("\nAverage is: " + str(round(average,2)) + " (secs)\n")
-
-        exceeded_max_diff = list()
-        exceeded_avg = list() 
-
-        for item in itemlist: 
-            # RFC 3339 format
-            timestamp = dateutil.parser.isoparse(item['timestamp']) 
-            signerTimestamp = dateutil.parser.isoparse(item['signerTimestamp'])
-            difference =  signerTimestamp - timestamp            
-
-            if prev_diff != 0: 
-                diff_between_ts_diff = abs(prev_diff - difference)
-
-                with open(fname, 'a+') as f:
-                    if diff_between_ts_diff.total_seconds() > max_acceptable_diff:                     
-                        s = "\n" + str(deviceID) + " WARNING!! ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(max_acceptable_diff,2)) + " (max_acceptable_diff)"
-                        exceeded_max_diff.append(s)
-                        f.write(s)
-
-                    if diff_between_ts_diff.total_seconds() > average: 
-                        s = "\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(average,2)) + " (average)"
-                        exceeded_avg.append(s)
-                        f.write(s)
-
-                    # if diff_between_ts_diff.total_seconds() > prev_diff.total_seconds(): 
-                    #     f.write("\n" + str(deviceID) + " ts diff: " + str(item['KenoID']) + " - "  + str(prev_resultId) + " = " + str(diff_between_ts_diff.total_seconds()) + " (secs) is > " + str(round(prev_diff.total_seconds(),2)) + " (previous diff)")
-
-                prev_diff = diff_between_ts_diff
-                prev_resultId = item['KenoID']
-            else: 
-                prev_diff = difference
-                prev_resultId = item['KenoID']
-
-        with open(fname, 'a+') as f: 
-            s1 = "\n\nThere were " + str(len(exceeded_max_diff)) + " timestamp differences that exceeded the maximum acceptable diff of " + str(round(max_acceptable_diff, 2)) + " (secs)\n"
-            f.write(s1)
-            s2 = "\nThere were " + str(len(exceeded_avg)) + " timestamp differences that exceeded the average diff of " + str(round(average,2)) + " (secs)"
-            f.write(s2)
 
     def getDevice(self, itemlist): 
         if len(itemlist) == 0:
             return "unknown"
             
         return itemlist[0]['DeviceID']
+
     # verifies parameters in the JSON result file for Keno games
     # input: json result file path
     # output: boolean: True | False
     #   will write to log file should tests fail
     # <timestamp>2021-06-15T14:01:21.972Z</timestamp><signerTimestamp>2021-06-16T00:14:10.000Z</signerTimestamp>
     def parametercheck_keno(self, resultsJsonFile):
-        MAXIMUM_TIMESTAMP_DIFFERENCE = 300
         with open(os.path.join(RNS2_LOGS_PATH_OUTPUT, resultsJsonFile), 'r') as f:
             json_data = json.load(f)
 
@@ -263,46 +194,32 @@ class RNS2_UnitTest(unittest.TestCase):
                     if (jweighting is not None):
                         self.logstringtofile("Keno ID : " + KenoID + " Result check weighting: FAIL ")
                         return False
+
                     jsver = child.find('{urn:envelope}verificationContext')
                     jtimestamp = child.findtext('{urn:envelope}timestamp')
                     jsignerTimestamp = child.findtext('{urn:envelope}signerTimestamp')
 
-                    #timestamp = datetime.strptime(jtimestamp, '%Y-%m-%dT%H:%M:%S%z')
-                    #jsignerTimestamp = datetime.strptime(jsignerTimestamp, '%Y-%m-%dT%H:%M:%S.%z')
                     timestamp = dateutil.parser.isoparse(jtimestamp) # RFC 3339 format
                     signerTimestamp = dateutil.parser.isoparse(jsignerTimestamp)
-
                     difference =  signerTimestamp - timestamp
-                    
-                    self.time_stamp_difference.append(difference)                    
-                    
-                    # display all differences
-                    s = "resultId: " + KenoID + " DeviceID: " + DeviceID + " signerTimestamp: " + str(signerTimestamp) \
-                            + " timestamp: " + str(timestamp) + " Difference (secs): " + str(abs(difference.total_seconds()))
-                    self.output_str.append(s)
-                                        
-                    
-                    # only generate average for results that exceed the max timestamp difference
-                    #if abs(difference.total_seconds()) > MAXIMUM_TIMESTAMP_DIFFERENCE:
-                    #    self.logstringtofile("resultId: " + KenoID + " DeviceID: " + DeviceID + " signerTimestamp: " + str(signerTimestamp) 
-                    #        + " timestamp: " + str(timestamp) + " Difference (secs): " + str(abs(difference.total_seconds())))
-                                                
-                    entry = dict()                        
-                    entry['signerTimestamp'] = str(signerTimestamp)
-                    entry['timestamp'] = str(timestamp)
-                    entry['KenoID'] = KenoID                                           
-                    entry['DeviceID'] = DeviceID
-                                           
-                    self.time_stamp_dict_l.append(entry)
-                                                   
-                        # return False
 
+                    # save entry into a list of dicts
+                    self.time_stamp_dict_l.append({
+                        'signerTimestamp': signerTimestamp,
+                        'timestamp': timestamp,
+                        'KenoID': KenoID,
+                        'DeviceID': DeviceID,
+                        'difference': abs(difference.total_seconds())
+                    })
+
+                    # update starting_date
                     if self.starting_date == '':
                         self.starting_date = timestamp
                     else: 
                         if timestamp < self.starting_date: 
                             self.starting_date = timestamp
-                            
+                    
+                    # update ending_date
                     if self.ending_date == '':
                         self.ending_date = timestamp
                     else: 
@@ -315,135 +232,43 @@ class RNS2_UnitTest(unittest.TestCase):
                         break
 
         return True
-    # #################### U N I T T E S T S #########################
-    # Test case to verify the parameters for each Keno game result
-    def test_parameter_check_keno(self): 
-        self.unzipped_files = RNS2_Unzip(RNS2_LOGS_PATH)
-        self.json_file_l = [x for x in os.listdir(self.json_results) if x.endswith('.json')]
-        self.time_stamp_difference = list() 
-        self.time_stamp_dict_l = list() 
-        self.output_str = list() 
-        self.starting_date = ''
-        self.ending_date = ''
-        
-        # Parameter check for each file
-        for f in self.json_file_l:
-            self.assertTrue(self.parametercheck_keno(f))
 
-        qldtbknrng01_entries = list()
-        qldtbknrng02_entries = list() 
-        qldtbknrng03_entries = list()
-        qldtbknrng04_entries = list() 
-        otherkrng_entries = list()
-        
-        # sort
-        for entry in self.time_stamp_dict_l:
-            for k,v in entry.items(): 
-                if k == 'DeviceID': 
-                    if v == 'qldtbknrng01': 
-                        qldtbknrng01_entries.append(entry)
-                    elif v == 'qldtbknrng02': 
-                        qldtbknrng02_entries.append(entry)
-                    elif v == 'qldtbknrng03': 
-                        qldtbknrng03_entries.append(entry)
-                    elif v == 'qldtbknrng04':
-                        qldtbknrng04_entries.append(entry)
-                    else: 
-                        otherkrng_entries.append(entry)
+    def AverageDifferencePerDay(self, device, deviceID): 
+        # get timestamps to calculate differences
+        differences_per_day = {}
+        for entry in device:
+            timestamp = entry["timestamp"]
+            signer_timestamp = entry["signerTimestamp"]
+            date = timestamp.date()
+            if date not in differences_per_day:
+                differences_per_day[date] = []
+            difference = (signer_timestamp - timestamp).total_seconds()
+            differences_per_day[date].append(difference)                    
 
-        rnglist = [qldtbknrng01_entries, qldtbknrng02_entries, qldtbknrng03_entries, qldtbknrng04_entries, otherkrng_entries]
+        # Calculate average difference per day
+        average_diff_per_day = {}
+        for date, differences in differences_per_day.items():
+            average_diff_per_day[date] = sum(differences) / len(differences)
 
-        # get average timestamp difference
-        for device in rnglist:
-            avg = 0
-            if len(device) != 0: 
-                deviceID = device[0]['DeviceID']
-                # avg = self.getAverage(device)
-                
-                # avg_HMS_str = time.strftime("%H:%M:%S", time.gmtime(avg))
-                fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - unittest_results.txt"
-                with open(fname, 'w+') as f:
-                    for entry in self.output_str:
-                        if deviceID in entry:
-                            f.write("\n" + entry) # write output str to file
+        # Calculate overall average difference
+        overall_average_diff = sum(sum(differences) for differences in differences_per_day.values()) / sum(len(differences) for differences in differences_per_day.values())
+        fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - avg timestamp diff per day.txt"        
+        with open(fname, 'w+') as f:
+            f.write("\n" + "deviceID: " + deviceID )
+            for date, average_diff in average_diff_per_day.items():
+                f.write("\n" + str(date) + "\t" + str(round(average_diff, 2)))
 
-                    # f.write("\n\n" + deviceID + " - The average time stamp difference (signingTimeStamp - timeStamp) is: " + avg_HMS_str + " or " + str(round(avg,2)) + " (secs)\n")
+    def ParameterCheckOutput(self, device, deviceID):
+        # write output str to file        
+        fname = f"{deviceID} - {self.starting_date.strftime('%d-%m-%Y')} to {self.ending_date.strftime('%d-%m-%Y')} - unittest_results.txt"
 
-        # timestamp differences between each result is greater than the average
-        # for device in rnglist: 
-        #     if len(device) != 0: 
-        #         self.getTimeDifference(device)
-
-    # Test case to verify the zip archive file name are sequential based on date 
-    # in the filename 
-    @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
-    def test_sequential_date(self):
-        file_date_list = list()
-        
-        for filename in self.result_files:
-            f = RNSResult(fname = filename)
-            timestamp = datetime.strptime(f.time_stamp, '%Y-%m-%dT%M.%H.%S')
-            file_date_list.append(timestamp)
-
-        file_date_list_sorted = sorted(file_date_list) 
-
-        self.assertTrue(len(file_date_list_sorted) > 0, len(file_date_list_sorted))
-        
-        generated_date_list = list()
-        for x in range((file_date_list_sorted[-1] - file_date_list_sorted[0]).days): 
-            generated_date_list.append(file_date_list_sorted[0] + timedelta(x))
-
-        missing = set(sorted(generated_date_list)) - set(sorted(file_date_list_sorted))
-    
-        if len(missing) == 0: 
-            print("\n\nNo Missing Keno Results")
-        else: 
-            print("\n\nMissing Keno Results: ")
-            for date in missing:
-                print("Date: " + date.strftime("%Y-%m-%d") + "; Filename: " + self.build_missing_filename(date))
-                
-        self.assertTrue(len(missing) == 0, len(missing))
-
-    # Test case to verify the file size of each zip file. 
-    @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
-    def test_file_size(self):
-        expected_fsize = 100000
-        for filename in self.result_files:
-            size_in_bytes = os.stat(os.path.join(self.path_to_results,filename))
-
-            if size_in_bytes.st_size < expected_fsize:
-                print("WARNING!: " + filename + ": is less than 100KB. Size is: " + str(size_in_bytes.st_size) + " bytes")
-            
-            err_msg = filename + " file size is less than expected size: " + str(size_in_bytes.st_size)
-            self.assertTrue(size_in_bytes.st_size > expected_fsize, err_msg)
-
-
-    # Test case to verify result file has been signed by an expected signing key
-    @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
-    def test_resultfile_with_signingkeys(self): 
-        self.unzipped_files = RNS2_Unzip(RNS2_LOGS_PATH)
-        json_file_l = [x for x in os.listdir(self.json_results) if x.endswith('.json')]
-        
-        signkey_list = [x for x in os.listdir(KEYPATH) if x.endswith('.pem')]
-        # append "keys" to filename 
-        signkey_list = [KEYPATH + "/" + s for s in signkey_list]
-            
-        for file in json_file_l:
-            subprocess.call('java -jar bin/KenoSignAudit.jar ' + os.path.join(RNS2_LOGS_PATH_OUTPUT, file) +  
-                ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
-
-        # cat all .out file in logevent file
-        fileout_lists = [x for x in os.listdir('.') if x.endswith('.out')] # list_files(RNS2_RESULTS_PATH, ".out")
-        self.concatenate_signlogfiles(fileout_lists)
-
-        with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'r') as f: 
-            for line in f: 
-                # log to file for any fail or none
-                if 'FAIL' in line or 'None' in line: 
-                    self.log_fail_or_none(line)
-                    
-                self.assertFalse('Fail' in line)
-                self.assertFalse('None' in line)
+        with open(fname, 'w+') as f:
+            for entry in device:
+                if entry['DeviceID'] == deviceID:
+                    s = (f"resultId: {entry['KenoID']} DeviceID: {entry['DeviceID']} "
+                         f"signerTimestamp: {entry['signerTimestamp']} "
+                         f"timestamp: {entry['timestamp']} Difference (secs): {entry['difference']}")
+                    f.write("\n" + s)
                     
 if __name__ == '__main__':
     unittest.main()
