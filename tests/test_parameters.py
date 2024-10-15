@@ -8,7 +8,15 @@ from rns2_result_audit import RNS2_UnitTest, TIMESTAMP_DRIFT_ONLY, RNSResult, \
 
 class test_parameters(RNS2_UnitTest):
     
-    def test_parameter_check_keno(self): 
+    def test_request_keno_parameters(self): 
+        json_file_l = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
+        self.assertTrue(len(json_file_l) > 0)
+
+        # Parameter check for each file
+        for f in json_file_l:
+            self.assertTrue(self.request_parametercheck_keno(f))        
+
+    def test_result_keno_parameters(self): 
         # Test case to verify the parameters for each Keno game result
         self.time_stamp_dict_l = list() 
         self.starting_date = ''
@@ -19,9 +27,9 @@ class test_parameters(RNS2_UnitTest):
 
         # Parameter check for each file
         for f in json_file_l:
-            # calling: self.parametercheck_keno generates: 
+            # calling: self.result_parametercheck_keno generates: 
             #  self.time_stamp_dict_l -- list of time stamp dicts
-            self.assertTrue(self.parametercheck_keno(f))
+            self.assertTrue(self.result_parametercheck_keno(f))
 
         # sort
         device_entries = {}
