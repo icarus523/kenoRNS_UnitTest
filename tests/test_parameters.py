@@ -32,29 +32,24 @@ class test_parameters(RNS2_UnitTest):
             self.assertTrue(self.result_parametercheck_keno(f))
 
         # sort
-        device_entries = {}
+        device_entries_l = {} # is a dict that contains a list for each device_id
         for entry in self.time_stamp_dict_l:
             device_id = entry.get('DeviceID', None)
             if device_id is not None:
-                if device_id not in device_entries:
-                    device_entries[device_id] = []
-                device_entries[device_id].append(entry)
+                if device_id not in device_entries_l:
+                    device_entries_l[device_id] = []
+                device_entries_l[device_id].append(entry)
 
-        # # Extract the device IDs and sort them alphabetically
-        device_ids = sorted(device_entries.keys())
-        self.assertTrue(len(device_ids) > 0)
+        # Extract the device IDs and sort them alphabetically
+        sorted_device_ids = sorted(device_entries_l.keys())
+        self.assertTrue(len(sorted_device_ids) > 0)
 
-        # # Create a list of entries for each device ID
-        rnglist = [device_entries[device_id] for device_id in device_ids]
-        self.assertTrue(len(rnglist) > 0)
+        for device_id in sorted_device_ids: # prddc2krn301        
+            # generate the average timestamp difference per day and write to file. 
+            self.AverageDifferencePerDay(device_entries_l[device_id], device_id)
 
-        for device in rnglist:
-            if len(device) != 0: 
-                device_id = entry.get('DeviceID', None)
-                # generate the average timestamp difference per day and write to file. 
-                self.AverageDifferencePerDay(device, device_id)
-                # write individual parameter check outputs to a file
-                self.ParameterCheckOutput(device, device_id)
+            # write individual parameter check outputs to a file
+            self.ParameterCheckOutput(device_entries_l[device_id], device_id)
 
     # Test case to verify the zip archive file name are sequential based on date 
     # in the filename 
