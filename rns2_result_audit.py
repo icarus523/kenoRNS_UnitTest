@@ -30,7 +30,7 @@ FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 # by default, keep this to false
 TIMESTAMP_DRIFT_ONLY = False
 
-EXPECTED_DEVICE_IDS = ['prddc2krng301', 'prddc2krng302', 'prddc1krng301', 'prddc1krng302']
+EXPECTED_DEVICE_IDS = ['prddc2krng301', 'prddc2krng302', 'prddc1krng301', 'prddc1krng302', 'qldtbknrng04']
 PATH_TO_CERTS = "keys/"
 class RNS2ResultEmail: 
 
@@ -404,9 +404,10 @@ class RNS2_UnitTest(unittest.TestCase):
         return True
 
     def AverageDifferencePerDay(self, device, deviceID): 
+    def AverageDifferencePerDay(self, device_l, deviceID): 
         # get timestamps to calculate differences
         differences_per_day = {}
-        for entry in device:
+        for entry in device_l:
             timestamp = entry["timestamp"]
             signer_timestamp = entry["signerTimestamp"]
             date = timestamp.date()
@@ -429,11 +430,12 @@ class RNS2_UnitTest(unittest.TestCase):
                 f.write("\n" + str(date) + "\t" + str(round(average_diff, 2)))
 
     def ParameterCheckOutput(self, device, deviceID):
+    def ParameterCheckOutput(self, device_l, deviceID):
         # write output str to file        
         fname = f"{deviceID} - {self.starting_date.strftime('%d-%m-%Y')} to {self.ending_date.strftime('%d-%m-%Y')} - unittest_results.txt"
 
         with open(fname, 'w+') as f:
-            for entry in device:
+            for entry in device_l:
                 if entry['DeviceID'] == deviceID:
                     s = (f"resultId: {entry['KenoID']} DeviceID: {entry['DeviceID']} "
                          f"signerTimestamp: {entry['signerTimestamp']} "
