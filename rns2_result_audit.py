@@ -7,10 +7,13 @@ import logging
 import dateutil.parser
 import time
 import re
+from collections import defaultdict
+import csv
 
 import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
 
+from statistics import mean
 from datetime import datetime, date, timedelta
 
 from cryptography import x509
@@ -433,7 +436,26 @@ class RNS2_UnitTest(unittest.TestCase):
 
         return True
 
-    def AverageDifferencePerDay(self, device, deviceID): 
+
+    # def calculate_diff(self, differences_per_day, average_diff_per_day):
+    #     result = {}
+
+    #     for date1, diffs in differences_per_day.items():
+    #         if date1 in average_diff_per_day:
+    #             average_diff = average_diff_per_day[date1]
+    #             diff_result = list()
+    #             for diff in diffs: 
+    #                 calc_diff = round(diff - average_diff, 2)
+    #                 diff_result.append(calc_diff)
+    #                 # print(f"date: {date1} - average time diff: {average_diff} - time diff average: {average_diff}[{date1}] = {calc_diff}")
+                
+    #             result[date1] = diff_result
+                    
+    #         else:
+    #             print(f"Skipping date {date1} because it does not exist in average_diff_per_day")
+        
+    #     return result
+
     def AverageDifferencePerDay(self, device_l, deviceID): 
         # get timestamps to calculate differences
         differences_per_day = {}
@@ -444,7 +466,9 @@ class RNS2_UnitTest(unittest.TestCase):
             if date not in differences_per_day:
                 differences_per_day[date] = []
             difference = (signer_timestamp - timestamp).total_seconds()
-            differences_per_day[date].append(difference)                    
+            differences_per_day[date].append(difference)
+
+        # print(differences_per_day)         # time.date(2024, 6, 12): [233.799, 233.83, 233.824, 233.822, 233.81, 233.816, ...
 
         # Calculate average difference per day
         average_diff_per_day = {}
@@ -452,14 +476,72 @@ class RNS2_UnitTest(unittest.TestCase):
             average_diff_per_day[date] = sum(differences) / len(differences)
 
         # Calculate overall average difference
-        overall_average_diff = sum(sum(differences) for differences in differences_per_day.values()) / sum(len(differences) for differences in differences_per_day.values())
+
+        # write to disk        
         fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - avg timestamp diff per day.txt"        
         with open(fname, 'w+') as f:
             f.write("\n" + "deviceID: " + deviceID )
             for date, average_diff in average_diff_per_day.items():
                 f.write("\n" + str(date) + "\t" + str(round(average_diff, 2)))
 
-    def ParameterCheckOutput(self, device, deviceID):
+    def GenerateAverageDiffperday_csv(self, input_file, output_file):
+        daily_differences = defaultdict(list)
+
+        # Regular expression to parse lines
+        line_pattern = re.compile(
+            r"resultId: (.+?) DeviceID: (.+?) signerTimestamp: (.+?) timestamp: (.+?) Difference \(secs\): (.+)"
+        )
+
+        # Read and parse the input file
+        with open(input_file, "r") as file:
+            entries = file.readlines()
+
+        data = []
+
+        for entry in entries:
+            match = line_pattern.match(entry.strip())
+            if match:
+                result_id, device_id, signer_ts, ts, difference = match.groups()
+                signer_date = datetime.fromisoformat(signer_ts).date()
+                difference = float(difference)
+
+                # Store the difference by day
+                daily_differences[signer_date].append(difference)
+
+                # Add parsed entry to data
+                data.append({
+                    "resultId": result_id,
+                    "DeviceID": device_id,
+                    "signerTimestamp": signer_ts,
+                    "timestamp": ts,
+                    "Difference (secs)": difference,
+                })
+
+        # Compute the average differences per day
+        daily_averages = {
+            day: sum(differences) / len(differences)
+            for day, differences in daily_differences.items()
+        }
+
+        # Add average column to data
+        for entry in data:
+            signer_date = datetime.fromisoformat(entry["signerTimestamp"]).date()
+            entry["Average Difference (secs) per Day"] = daily_averages[signer_date]
+
+        # Write the updated data to the output CSV file
+        with open(output_file, "w", newline="") as csvfile:
+            fieldnames = [
+                "resultId",
+                "DeviceID",
+                "signerTimestamp",
+                "timestamp",
+                "Difference (secs)",
+                "Average Difference (secs) per Day",
+            ]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(data)
+
     def ParameterCheckOutput(self, device_l, deviceID):
         # write output str to file        
         fname = f"{deviceID} - {self.starting_date.strftime('%d-%m-%Y')} to {self.ending_date.strftime('%d-%m-%Y')} - unittest_results.txt"
@@ -471,6 +553,9 @@ class RNS2_UnitTest(unittest.TestCase):
                          f"signerTimestamp: {entry['signerTimestamp']} "
                          f"timestamp: {entry['timestamp']} Difference (secs): {entry['difference']}")
                     f.write("\n" + s)
-                    
+
+        return fname
+
+
 if __name__ == '__main__':
     unittest.main()

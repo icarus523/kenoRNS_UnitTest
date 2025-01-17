@@ -49,7 +49,10 @@ class test_parameters(RNS2_UnitTest):
             self.AverageDifferencePerDay(device_entries_l[device_id], device_id)
 
             # write individual parameter check outputs to a file
-            self.ParameterCheckOutput(device_entries_l[device_id], device_id)
+            input_file = self.ParameterCheckOutput(device_entries_l[device_id], device_id)
+
+            output_file = input_file.replace("unittest_results.txt", "averageDiffperDay_for_gradient_analysis.txt")
+            self.GenerateAverageDiffperday_csv(input_file, output_file)
 
     # Test case to verify the zip archive file name are sequential based on date 
     # in the filename 
@@ -96,6 +99,8 @@ class test_parameters(RNS2_UnitTest):
 
 
     # Test case to verify result file has been signed by an expected signing key
+    # The verification is performed utilising the application: KenoSignAudit.jar - 
+    # this application is built from source as per WI31
     @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
     def test_resultfile_with_signingkeys(self): 
         json_file_l = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
