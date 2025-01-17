@@ -30,8 +30,25 @@ FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 # by default, keep this to false
 TIMESTAMP_DRIFT_ONLY = False
 
-EXPECTED_DEVICE_IDS = ['prddc2krng301', 'prddc2krng302', 'prddc1krng301', 'prddc1krng302', 'qldtbknrng04']
-PATH_TO_CERTS = "keys/"
+EXPECTED_DEVICE_IDS = ['prddc2krng301', 'prddc2krng302', 'prddc1krng301', \
+    'prddc1krng302', 'qldtbknrng04','qldtbknrng03','qldtbknrng02','qldtbknrng01']
+
+PATH_TO_CERTS = "keys/" # RNS signingkeys
+
+# Expected Keno RNS draw parameters
+KENO_RNS_PARAMETERS = {
+    "type" : "keno-qld", 
+    "count" : 20, 
+    "numberOfSets" : 1,
+    "range" : {
+        "max" : 80,
+        "min" : 1
+    },
+    "replacement" : False,
+    "weighting": None, 
+    "info": None, 
+}
+
 class RNS2ResultEmail: 
 
     def __init__(self, start_date, end_date, result_d): 
@@ -175,16 +192,24 @@ class RNS2_UnitTest(unittest.TestCase):
         return bool(re.match(pattern, string))
 
     def verifyKenoParameterDrawRequest(self, p):
+        mandatory_keys_in_draw_request = {'numberOfSets', 'range', 'count','replacement','weighting'}
+        if not mandatory_keys_in_draw_request.issubset(p.keys()):
+            return False
+
         return (
-            p["numberOfSets"] == 1 and
-            p["range"]["min"] == 1 and
-            p["range"]["max"] == 80 and
-            p["count"] == 20 and
+            p["numberOfSets"] == KENO_RNS_PARAMETERS["numberOfSets"] and
+            p["range"]["min"] == KENO_RNS_PARAMETERS["range"]["min"] and
+            p["range"]["max"] == KENO_RNS_PARAMETERS["range"]["max"] and
+            p["count"] == KENO_RNS_PARAMETERS["count"] and
             p["replacement"] == False and
             p["weighting"] == None
         )
 
     def verify_verificationContext_DrawRequest(self, p): 
+        mandatory_keys_in_verificationContext_draw_request = {'gameDate', 'gameNumber','digest'}
+        if not mandatory_keys_in_verificationContext_draw_request.issubset(p.keys()):
+            return False
+
         return (
                 self.is_valid_date(p["gameDate"]) and 
                 p["gameNumber"].isdigit() and
@@ -192,7 +217,6 @@ class RNS2_UnitTest(unittest.TestCase):
                 self.is_sha256_hash(p["digest"]) and
                 not self.contains_xml_metacharacters(p["digest"])
         )
-
 
     def load_pem_cert(self, pem_data):
         return x509.load_pem_x509_certificate(pem_data.encode(), default_backend())
@@ -233,7 +257,7 @@ class RNS2_UnitTest(unittest.TestCase):
                     self.logstringtofile("Keno ID : " + resultId + " request resultId check - expected: + " + resultId + ":  FAIL ")
                     return False
 
-                if request_json['type'] != 'keno-qld': 
+                if request_json['type'] != KENO_RNS_PARAMETERS['type']: 
                     self.logstringtofile("Keno ID : " + resultId + " request type check - not 'keno-qld':  FAIL ")
                     return False
 
@@ -246,6 +270,12 @@ class RNS2_UnitTest(unittest.TestCase):
                     return False                    
 
         return True
+
+    def string_to_bool(self, s):
+        if  s.lower() == 'false':
+            return False
+        elif s.lower() == 'true': 
+            return True
 
     # verifies parameters in the JSON result file for Keno games
     # input: json result file path
@@ -295,13 +325,13 @@ class RNS2_UnitTest(unittest.TestCase):
                     jpara = child.find('{urn:envelope}parameters')
                     jnumset = jpara.findtext('{urn:envelope}numberOfSets')
                     #print(jnumset)
-                    if (int(jnumset) != 1):
+                    if (int(jnumset) != KENO_RNS_PARAMETERS['numberOfSets']):
                         self.logstringtofile("Keno ID : " + KenoID + " Result check numberOfSets:  FAIL ")
                         return False
                     jcount = jpara.findtext('{urn:envelope}count')
                     #print(jcount)
-                    if (int(jcount) != 20):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check count: FAIL ")
+                    if (int(jcount) != KENO_RNS_PARAMETERS['count']):
+                        self.logstringtofile("Keno ID : " + KenoID + " Result check count: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['count']) + " Response: " + str(int(jcount)))
                         return False
 
                     jrange = jpara.findall('{urn:envelope}range')
@@ -311,22 +341,22 @@ class RNS2_UnitTest(unittest.TestCase):
                     for item in jrange:
                         for k,v in item.attrib.items():
                             #print(k, v)
-                            if (k=="max" and (int(v) !=80)):
+                            if (k=="max" and (int(v) != KENO_RNS_PARAMETERS['range']['max'])):
                                 self.logstringtofile("Keno ID : " + KenoID + " Result check range max: FAIL ")
                                 return False
-                            if (k=="min" and (int(v) !=1)):
+                            if (k=="min" and (int(v) != KENO_RNS_PARAMETERS['range']['min'])):
                                 self.logstringtofile("Keno ID : " + KenoID + " Result check range min: FAIL ")
                                 return False
 
                     jreplacement = jpara.findtext('{urn:envelope}replacement')
                     #print(jreplacement)
-                    if (jreplacement != "false"):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check replacement: FAIL ")
+                    if (self.string_to_bool(jreplacement) != KENO_RNS_PARAMETERS['replacement']):
+                        self.logstringtofile("Keno ID : " + KenoID + " Result check replacement: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['replacement']) + " Response: " + str(self.string_to_bool(jreplacement)))
                         return False
 
                     jweighting= jpara.findtext('{urn:envelope}weighting')
                     #print("weigth: ", jweighting)
-                    if (jweighting is not None):
+                    if (jweighting is not KENO_RNS_PARAMETERS['weighting']):
                         self.logstringtofile("Keno ID : " + KenoID + " Result check weighting: FAIL ")
                         return False
 
