@@ -257,19 +257,19 @@ class RNS2_UnitTest(unittest.TestCase):
                 request_json = json.loads(results['result']['request'].encode('utf-8'))
 
                 if request_json['resultId'] != resultId: 
-                    self.logstringtofile("Keno ID : " + resultId + " request resultId check - expected: + " + resultId + ":  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + resultId + " request resultId check - expected: + " + resultId + ":  FAIL\n")
                     return False
 
                 if request_json['type'] != KENO_RNS_PARAMETERS['type']: 
-                    self.logstringtofile("Keno ID : " + resultId + " request type check - not 'keno-qld':  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + resultId + " request type check - not 'keno-qld':  FAIL\n")
                     return False
 
                 if not self.verifyKenoParameterDrawRequest(request_json['parameters']):
-                    self.logstringtofile("Keno ID : " + resultId + " request draw parameters check:  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + resultId + " request draw parameters check:  FAIL\n")
                     return False
 
                 if not self.verify_verificationContext_DrawRequest(request_json["verificationContext"]):
-                    self.logstringtofile("Keno ID : " + resultId + " request verificationContext parameters check:  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + resultId + " request verificationContext parameters check:  FAIL\n")
                     return False                    
 
         return True
@@ -305,19 +305,19 @@ class RNS2_UnitTest(unittest.TestCase):
                 #     return False                     
 
                 if not self.is_valid_timestamp(Timestamp): 
-                    self.logstringtofile("Keno ID : " + KenoID + " timestamp is not valid - " + Timestamp + ":  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " timestamp is not valid - " + Timestamp + ":  FAIL\n")
                     return False                        
 
                 if InternalID != ResultSerial:
-                    self.logstringtofile("Keno ID : " + KenoID + " internalId does not match resultSerial - InternalID=" + InternalID + " - ResultID=" + DeviceID + ":  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " internalId does not match resultSerial - InternalID=" + InternalID + " - ResultID=" + DeviceID + ":  FAIL\n")
                     return False                        
 
                 if Info: 
-                    self.logstringtofile("Keno ID : " + KenoID + " info field is not nil - info:" + Info + ":  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " info field is not nil - info:" + Info + ":  FAIL\n")
                     return False                                   
 
                 if not DeviceID in EXPECTED_DEVICE_IDS:
-                    self.logstringtofile("Keno ID : " + KenoID + " DeviceID unknown - " + DeviceID + ":  FAIL ")
+                    self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " DeviceID unknown - " + DeviceID + ":  FAIL\n")
                     return False                    
 
                 # verify 'result' field (XML) data
@@ -329,12 +329,12 @@ class RNS2_UnitTest(unittest.TestCase):
                     jnumset = jpara.findtext('{urn:envelope}numberOfSets')
                     #print(jnumset)
                     if (int(jnumset) != KENO_RNS_PARAMETERS['numberOfSets']):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check numberOfSets:  FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check numberOfSets:  FAIL\n")
                         return False
                     jcount = jpara.findtext('{urn:envelope}count')
                     #print(jcount)
                     if (int(jcount) != KENO_RNS_PARAMETERS['count']):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check count: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['count']) + " Response: " + str(int(jcount)))
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check count: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['count']) + " Response: " + str(int(jcount)) + "\n")
                         return False
 
                     jrange = jpara.findall('{urn:envelope}range')
@@ -345,22 +345,22 @@ class RNS2_UnitTest(unittest.TestCase):
                         for k,v in item.attrib.items():
                             #print(k, v)
                             if (k=="max" and (int(v) != KENO_RNS_PARAMETERS['range']['max'])):
-                                self.logstringtofile("Keno ID : " + KenoID + " Result check range max: FAIL ")
+                                self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check range max: FAIL\n")
                                 return False
                             if (k=="min" and (int(v) != KENO_RNS_PARAMETERS['range']['min'])):
-                                self.logstringtofile("Keno ID : " + KenoID + " Result check range min: FAIL ")
+                                self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check range min: FAIL\n")
                                 return False
 
                     jreplacement = jpara.findtext('{urn:envelope}replacement')
                     #print(jreplacement)
                     if (self.string_to_bool(jreplacement) != KENO_RNS_PARAMETERS['replacement']):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check replacement: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['replacement']) + " Response: " + str(self.string_to_bool(jreplacement)))
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check replacement: FAIL - Expected: " + str(KENO_RNS_PARAMETERS['replacement']) + " Response: " + str(self.string_to_bool(jreplacement)) + "\n")
                         return False
 
                     jweighting= jpara.findtext('{urn:envelope}weighting')
                     #print("weigth: ", jweighting)
                     if (jweighting is not KENO_RNS_PARAMETERS['weighting']):
-                        self.logstringtofile("Keno ID : " + KenoID + " Result check weighting: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID + " Result check weighting: FAIL\n")
                         return False
 
                     jsver = child.find('{urn:envelope}verificationContext')
@@ -370,33 +370,33 @@ class RNS2_UnitTest(unittest.TestCase):
                     # print("gameNumber is: " + str(gameNumber))
                     # self.assertTrue(gameNumber.isdigit())
                     if not gameNumber.isdigit(): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - gameNumber not a digit: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - gameNumber not a digit: FAIL\n")
                         return False
 
                     if self.contains_xml_metacharacters(gameNumber): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - gameNumber contains XML metacharacters: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - gameNumber contains XML metacharacters: FAIL\n")
                         return False
 
                     digest = jsver.findtext('{urn:envelope}digest')
                     # print("digest is: " + str(digest))
                     # self.assertTrue(self.is_sha256_hash(digest))
                     if not self.is_sha256_hash(digest): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - digest not a SHA256 hash: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - digest not a SHA256 hash: FAIL\n")
                         return False                        
 
                     if self.contains_xml_metacharacters(digest): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - digest contains XML metachars: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - digest contains XML metachars: FAIL\n")
                         return False
 
                     gameDate = jsver.findtext('{urn:envelope}gameDate')
                     # print("gameDate is: " + str(gameDate))
                     # self.assertTrue(self.is_valid_date(gameDate))
                     if not self.is_valid_date(gameDate): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - gameDate not a valid date: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - gameDate not a valid date: FAIL\n")
                         return False                        
 
                     if self.contains_xml_metacharacters(gameDate): 
-                        self.logstringtofile("Keno ID : " + KenoID +  " verificationContext - gameDate contains XML metachars: FAIL ")
+                        self.logstringtofile("[FAIL] - Keno ID : " + KenoID +  " verificationContext - gameDate contains XML metachars: FAIL\n")
                         return False
 
                     jtimestamp = child.findtext('{urn:envelope}timestamp')
