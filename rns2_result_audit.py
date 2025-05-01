@@ -77,7 +77,7 @@ class RNS2_Unzip:
         else:
             self.path_to_results = path_to_result
         
-        self.result_files = [x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')]
+        self.result_files = sorted([x for x in os.listdir(self.path_to_results) if x.endswith('.json.zip')])
         assert(len(self.result_files) > 0)
         
         self.process_files()
@@ -86,7 +86,7 @@ class RNS2_Unzip:
         for filename in self.result_files:
             self.unzip(os.path.join(RNS2_LOGS_PATH, filename), RNS2_LOGS_PATH_OUTPUT)
 
-        self.result_json_files = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
+        self.result_json_files = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
         for json_filename in self.result_json_files:
             size_in_bytes = os.stat(os.path.join(RNS2_LOGS_PATH_OUTPUT, json_filename))
 
@@ -125,11 +125,11 @@ class RNS2_UnitTest(unittest.TestCase):
 
     def setUp(self):
         self.path_to_results = RNS2_LOGS_PATH # unzipped archives
-        self.result_files = [x for x in os.listdir(RNS2_LOGS_PATH) if x.endswith('.json.zip')]
+        self.result_files = sorted([x for x in os.listdir(RNS2_LOGS_PATH) if x.endswith('.json.zip')])
         RNS2_Unzip(self.path_to_results)
         
     def tearDown(self):
-        json_file_l = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
+        json_file_l = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
 
         # delete json files            
         for f in json_file_l:

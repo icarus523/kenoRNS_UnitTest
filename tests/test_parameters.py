@@ -103,9 +103,9 @@ class test_parameters(RNS2_UnitTest):
     # this application is built from source as per WI31
     @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
     def test_resultfile_with_signingkeys(self): 
-        json_file_l = [x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')]
+        json_file_l = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
         
-        signkey_list = [x for x in os.listdir(KEYPATH) if x.endswith('.pem')]
+        signkey_list = sorted([x for x in os.listdir(KEYPATH) if x.endswith('.pem')])
         # append "keys" to filename 
         signkey_list = [KEYPATH + "/" + s for s in signkey_list]
             
@@ -114,7 +114,7 @@ class test_parameters(RNS2_UnitTest):
                 ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
 
         # cat all .out file in logevent file
-        fileout_lists = [x for x in os.listdir('.') if x.endswith('.out')] # list_files(RNS2_RESULTS_PATH, ".out")
+        fileout_lists = sorted([x for x in os.listdir('.') if x.endswith('.out')]) # list_files(RNS2_RESULTS_PATH, ".out")
         self.concatenate_signlogfiles(fileout_lists)
 
         with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'r') as f: 
