@@ -19,6 +19,9 @@ del /q *.out
 REM Remove results extracted
 REM rmdir /q rns2results\*.json
 
+REM Remove .png files
+del /q *.png
+
 REM Perform unit tests
 python -m unittest discover -s tests -v
 

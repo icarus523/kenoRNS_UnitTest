@@ -19,6 +19,9 @@ rm *.out
 # remove results extracted
 rm rns2results/*
 
+# remove .png files
+rm *.png
+
 # perform unit tests
 python3 -m unittest discover -s tests -v
 

@@ -1,14 +1,16 @@
-import os
-import unittest
-import json
-import subprocess
-import zipfile
-import logging
-import dateutil.parser
-import time
-import re
-from collections import defaultdict
 import csv
+import dateutil.parser
+import json
+import logging
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
+import re
+import subprocess
+import time
+import unittest
+import zipfile
+import numpy as np
 
 import xml.etree.ElementTree as etree
 from xml.etree.ElementTree import ElementTree
@@ -18,6 +20,8 @@ from datetime import datetime, date, timedelta
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+
+from collections import defaultdict
 
 # path to zipped rns2files
 RNS2_LOGS_PATH = "rns2_results_unzipped"
@@ -138,6 +142,97 @@ class RNS2_UnitTest(unittest.TestCase):
 
         # delete zip files
         # do here
+
+    def generate_gradient_analysis(self, avg_diff_filename, unittest_results_filename, threshold_percent=10):        
+        # avg_diff_path = os.path.join(self.output_dir, avg_diff_filename)
+        # unittest_results_path = os.path.join(self.output_dir, unittest_results_filename)
+        avg_diff_path = avg_diff_filename
+        unittest_results_path = unittest_results_filename
+
+        # Load Average Difference Per Day
+        avg_diff_data = []
+        with open(avg_diff_path, 'r') as file:
+            lines = file.readlines()[1:]  # Skip header line
+            for line in lines:
+                if '\t' in line:
+                    date_str, avg_diff = line.strip().split('\t')
+                    avg_diff_data.append({'Date': datetime.strptime(date_str, '%Y-%m-%d'), 'AvgDiff': float(avg_diff)})
+
+        avg_diff_df = pd.DataFrame(avg_diff_data)
+        # if avg_diff_df.empty:
+        #     print(f"[ERROR] No data loaded from {avg_diff_filename}. Check file path or format.")
+        #     return
+
+        # Calculate dynamic thresholds
+        overall_avg = avg_diff_df['AvgDiff'].mean()
+        lower_bound = overall_avg * (1 - threshold_percent / 100)
+        upper_bound = overall_avg * (1 + threshold_percent / 100)
+
+        # Regex pattern for parsing
+        pattern = re.compile(r'resultId: (.+?) DeviceID: .+? signerTimestamp: (\d{4}-\d{2}-\d{2}) .+? Difference \(secs\): ([\d\.]+)')
+
+        # Load Detailed Differences
+        detailed_data = []
+        with open(unittest_results_path, 'r') as file:
+            for line in file:
+                match = pattern.search(line)
+                if match:
+                    result_id, date_str, diff_secs = match.groups()
+                    detailed_data.append({'Date': datetime.strptime(date_str, '%Y-%m-%d'), 
+                                          'ResultID': result_id, 
+                                          'DiffSecs': float(diff_secs)})
+
+        detailed_df = pd.DataFrame(detailed_data)
+
+        # Detect Outliers
+        outliers_df = detailed_df[(detailed_df['DiffSecs'] > upper_bound) | (detailed_df['DiffSecs'] < lower_bound)]
+
+        # Convert dates to numerical format for regression
+        x_numeric = avg_diff_df['Date'].map(datetime.toordinal)
+        y_values = avg_diff_df['AvgDiff']
+
+        # Calculate linear regression (1st degree polynomial)
+        slope, intercept = np.polyfit(x_numeric, y_values, 1)
+
+        # Generate trendline values
+        trendline = slope * x_numeric + intercept
+
+        # Plotting
+        plt.figure(figsize=(15, 7))
+
+        # Plot all differences
+        # plt.scatter(detailed_df['Date'], detailed_df['DiffSecs'], label='Timestamp Differences', alpha=0.6)
+        
+        # Plot average Difference
+        plt.plot(avg_diff_df['Date'], avg_diff_df['AvgDiff'], color='orange', label='Average Difference Per Day', linewidth=2)
+        
+        # Plot Outliers
+        plt.scatter(outliers_df['Date'], outliers_df['DiffSecs'], color='red', label=f'Outliers (+/-{threshold_percent}%)')
+
+        # Plot the trendline
+        plt.plot(avg_diff_df['Date'], trendline, color='green', linestyle='--', label='Linear Trendline')
+        # Add equation text
+        equation_text = f"y = {slope:.4f}x + {intercept:.2f}" 
+        plt.text(avg_diff_df['Date'].min(), max(y_values), equation_text, fontsize=12, color='green')
+
+        plt.title('Keno RNS Result Timestamp Gradient Analysis with Trend Line and Outliers')
+        plt.xlabel('Date')
+        plt.ylabel('Difference (secs)')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        # Save plot
+        plot_path = os.path.join(self.output_dir, 'timestamp_diff_analysis.png')
+        plt.savefig(plot_path)
+        plt.close()
+
+        print(f"[INFO] Plot saved to {plot_path}")
+
+        # Save outliers
+        outliers_path = os.path.join(self.output_dir, 'timestamp_outliers.csv')
+        outliers_df.to_csv(outliers_path, index=False)
+        print(f"[INFO] Outliers saved to {outliers_path}")
 
     def concatenate_signlogfiles(self, filenames):
         with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'w') as outfile:
