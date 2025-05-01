@@ -537,26 +537,6 @@ class RNS2_UnitTest(unittest.TestCase):
 
         return True
 
-
-    # def calculate_diff(self, differences_per_day, average_diff_per_day):
-    #     result = {}
-
-    #     for date1, diffs in differences_per_day.items():
-    #         if date1 in average_diff_per_day:
-    #             average_diff = average_diff_per_day[date1]
-    #             diff_result = list()
-    #             for diff in diffs: 
-    #                 calc_diff = round(diff - average_diff, 2)
-    #                 diff_result.append(calc_diff)
-    #                 # print(f"date: {date1} - average time diff: {average_diff} - time diff average: {average_diff}[{date1}] = {calc_diff}")
-                
-    #             result[date1] = diff_result
-                    
-    #         else:
-    #             print(f"Skipping date {date1} because it does not exist in average_diff_per_day")
-        
-    #     return result
-
     def AverageDifferencePerDay(self, device_l, deviceID): 
         # get timestamps to calculate differences
         differences_per_day = {}
@@ -569,15 +549,12 @@ class RNS2_UnitTest(unittest.TestCase):
             difference = (signer_timestamp - timestamp).total_seconds()
             differences_per_day[date].append(difference)
 
-        # print(differences_per_day)         # time.date(2024, 6, 12): [233.799, 233.83, 233.824, 233.822, 233.81, 233.816, ...
-
         # Calculate average difference per day
         average_diff_per_day = {}
         for date, differences in differences_per_day.items():
             average_diff_per_day[date] = sum(differences) / len(differences)
 
         # Calculate overall average difference
-
         # write to disk        
         fname = deviceID + " - " + self.starting_date.strftime("%d-%m-%Y") + " to " + self.ending_date.strftime("%d-%m-%Y") +  " - avg timestamp diff per day.txt"        
         with open(fname, 'w+') as f:
@@ -598,7 +575,6 @@ class RNS2_UnitTest(unittest.TestCase):
             entries = file.readlines()
 
         data = []
-
         for entry in entries:
             match = line_pattern.match(entry.strip())
             if match:
