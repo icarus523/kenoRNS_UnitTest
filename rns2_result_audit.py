@@ -37,8 +37,14 @@ FILE_CONCATENATED_VERIFIED_SIGNED_LOGS = 'signlog.txt'
 # by default, keep this to false
 TIMESTAMP_DRIFT_ONLY = False
 
-EXPECTED_DEVICE_IDS = ['prddc2krng301', 'prddc2krng302', 'prddc1krng301', \
-    'prddc1krng302', 'qldtbknrng04','qldtbknrng03','qldtbknrng02','qldtbknrng01']
+EXPECTED_DEVICE_IDS = [
+    'prddc2krng301', 
+    'prddc2krng302', 
+    'prddc1krng301',
+    'prddc1krng302'
+]
+# Old device ID, kept incase you need to verify old results
+# 'qldtbknrng04','qldtbknrng03','qldtbknrng02','qldtbknrng01']
 
 PATH_TO_CERTS = "keys/" # RNS signingkeys
 
