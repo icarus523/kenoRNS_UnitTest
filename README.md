@@ -1,6 +1,9 @@
 # kenoRNS_UnitTest
 Unit Testing for Keno RNS results. 
 
+## AS OF 2025 with new Laptop, only Command Prompt works for the venv, i.e. don't try Ubuntu under WSL.
+## ALSO use __start_audit.bat
+
 The following tests have been implemented: 
 1. Sequential Date (from the earliest date in the directory to the latest file)
 2. File Size > 100kb
