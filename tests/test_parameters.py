@@ -1,6 +1,7 @@
 import unittest
 import os
 import subprocess
+import sys
 
 from datetime import datetime, date, timedelta
 from rns2_result_audit import RNS2_UnitTest, TIMESTAMP_DRIFT_ONLY, RNSResult, \
@@ -101,27 +102,97 @@ class test_parameters(RNS2_UnitTest):
     # Test case to verify result file has been signed by an expected signing key
     # The verification is performed utilising the application: KenoSignAudit.jar - 
     # this application is built from source as per WI31
-    @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
-    def test_resultfile_with_signingkeys(self): 
-        json_file_l = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
+    # @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
+    # def test_resultfile_with_signingkeys(self): 
+    #     json_file_l = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
         
-        signkey_list = sorted([x for x in os.listdir(KEYPATH) if x.endswith('.pem')])
-        # append "keys" to filename 
-        signkey_list = [KEYPATH + "/" + s for s in signkey_list]
+    #     signkey_list = sorted([x for x in os.listdir(KEYPATH) if x.endswith('.pem')])
+    #     # append "keys" to filename 
+    #     signkey_list = [KEYPATH + "/" + s for s in signkey_list]
             
-        for file in json_file_l:
-            subprocess.call('java -jar bin/KenoSignAudit.jar ' + os.path.join(RNS2_LOGS_PATH_OUTPUT, file) +  
-                ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
+    #     for file in json_file_l:
+    #         subprocess.call('java -jar bin/KenoSignAudit.jar ' + os.path.join(RNS2_LOGS_PATH_OUTPUT, file) +  
+    #             ' ' + ' '.join(signkey_list) + ' > ' + file +'_signlog.out', shell=True)
 
-        # cat all .out file in logevent file
-        fileout_lists = sorted([x for x in os.listdir('.') if x.endswith('.out')]) # list_files(RNS2_RESULTS_PATH, ".out")
+    #     # cat all .out file in logevent file
+    #     fileout_lists = sorted([x for x in os.listdir('.') if x.endswith('.out')]) # list_files(RNS2_RESULTS_PATH, ".out")
+    #     self.concatenate_signlogfiles(fileout_lists)
+
+    #     with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'r') as f: 
+    #         for line in f: 
+    #             # log to file for any fail or none
+    #             if 'FAIL' in line or 'None' in line: 
+    #                 self.log_fail_or_none(line)
+                    
+    #             self.assertFalse('Fail' in line)
+    #             self.assertFalse('None' in line)    
+
+
+    # Test case to verify result file has been signed by an expected signing key.
+    # Verification is performed using the Python 3 results_verification_py3.py script.
+    @unittest.skipIf(TIMESTAMP_DRIFT_ONLY, "testing only time drift")
+    def test_resultfile_with_signingkeys(self):
+        # json_file_l = sorted([x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT) if x.endswith('.json')])
+        json_file_l = sorted([
+            x for x in os.listdir(RNS2_LOGS_PATH_OUTPUT)
+            if x.endswith('.json')
+            and os.path.isfile(os.path.join(RNS2_LOGS_PATH_OUTPUT, x))
+        ])
+        self.assertTrue(len(json_file_l) > 0)
+
+        verifier_script = os.path.abspath("results_verification_py3.py")
+        self.assertTrue(
+            os.path.isfile(verifier_script),
+            f"Unable to find verifier script: {verifier_script}"
+        )
+
+        self.assertTrue(
+            os.path.isdir(KEYPATH),
+            f"Unable to find signing key directory: {KEYPATH}"
+        )
+
+        signkey_list = sorted([x for x in os.listdir(KEYPATH) if x.endswith('.pem')])
+        self.assertTrue(
+            len(signkey_list) > 0,
+            f"No .pem signing keys found in directory: {KEYPATH}"
+        )
+
+        for file in json_file_l:
+            result_json_path = os.path.join(RNS2_LOGS_PATH_OUTPUT, file)
+            output_file = f"{file}_signlog.out"
+
+            cmd = [
+                sys.executable,
+                verifier_script,
+                "-j",
+                result_json_path,
+                "-c",
+                KEYPATH,
+            ]
+
+            with open(output_file, "w", encoding="utf-8") as stdout_file:
+                completed = subprocess.run(
+                    cmd,
+                    stdout=stdout_file,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+
+            self.assertEqual(
+                completed.returncode,
+                0,
+                f"Signature verification script failed for {file}: {completed.stderr}"
+            )
+
+        # concatenate all .out files into the signed log file
+        fileout_lists = sorted([x for x in os.listdir('.') if x.endswith('.out')])
         self.concatenate_signlogfiles(fileout_lists)
 
-        with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'r') as f: 
-            for line in f: 
+        with open(FILE_CONCATENATED_VERIFIED_SIGNED_LOGS, 'r', encoding='utf-8') as f:
+            for line in f:
                 # log to file for any fail or none
-                if 'FAIL' in line or 'None' in line: 
+                if 'FAIL' in line or 'None' in line:
                     self.log_fail_or_none(line)
-                    
-                self.assertFalse('Fail' in line)
-                self.assertFalse('None' in line)    
+
+                self.assertFalse('FAIL' in line, line)
+                self.assertFalse('None' in line, line)
