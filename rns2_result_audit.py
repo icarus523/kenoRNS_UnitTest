@@ -229,14 +229,15 @@ class RNS2_UnitTest(unittest.TestCase):
         plt.tight_layout()
 
         # Save plot
-        plot_path = os.path.join(self.output_dir, 'timestamp_diff_analysis.png')
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        plot_path = os.path.join(self.output_dir, f"timestamp_diff_analysis_{ts}.png")
         plt.savefig(plot_path)
         plt.close()
 
         print(f"[INFO] Plot saved to {plot_path}")
 
         # Save outliers
-        outliers_path = os.path.join(self.output_dir, 'timestamp_outliers.csv')
+        outliers_path = os.path.join(self.output_dir, f"timestamp_outliers_{ts}.csv")
         outliers_df.to_csv(outliers_path, index=False)
         print(f"[INFO] Outliers saved to {outliers_path}")
 
