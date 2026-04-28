@@ -22,6 +22,9 @@ rm rns2results/*
 # remove .png files
 rm *.png
 
+# remove .csv files
+rm *.csv
+
 # perform unit tests
 python3 -m unittest discover -s tests -v
 
